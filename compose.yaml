@@ -9,4 +9,19 @@ services:
     
     expose:
       - "8000"
+    
+  postgres:
+    image: postgres:17
+    
+    environment:
+      - POSTGRES_USER=test_user
+      - POSTGRES_PASSWORD=12345
+      - POSTGRES_DB=codereview_db
+
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+volumes:
+  postgres_data:
+
 

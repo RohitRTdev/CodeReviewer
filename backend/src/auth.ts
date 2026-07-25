@@ -138,4 +138,11 @@ router.get("/login", async (req, res) => {
   }
 });
 
+router.get("/logout", (req, res) => {
+  res.clearCookie("jwt");
+  res.clearCookie("oauth");
+  res.redirect("/");
+});
+
+
 export default router;

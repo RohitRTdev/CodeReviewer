@@ -3,7 +3,14 @@ import checkSession, { getUser } from './user.ts';
 
 function Dashboard({ user } : { user: string }) {  
   return (
-    <h1>Welcome {user}!</h1>
+    <div className="navbar">
+      <h1>Welcome {user}!</h1>
+      <div id="logout-button">
+        <button onClick={() => {window.location.href="/api/logout"}}>
+          Logout
+        </button>
+      </div>
+    </div>
   );
 }
 
@@ -34,7 +41,7 @@ function App() {
   if (button) {
     return (
       <div className="centered-elem">
-        <button onClick={() => window.location.href="/api/login"}>
+        <button id="login-button" onClick={() => window.location.href="/api/login"}>
           Login with github
         </button>
       </div>

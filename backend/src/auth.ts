@@ -2,6 +2,7 @@ import jwt from "jsonwebtoken";
 import crypto from "node:crypto";
 import { Router } from "express";
 import { getUserDetails } from './utils.js';
+import { setupUser } from './db.js';
 
 const router = Router();
 
@@ -58,16 +59,16 @@ router.get("/login", async (req, res) => {
       const response = await fetch(
       "https://github.com/login/oauth/access_token",
       {
-          method: "POST",
-          headers: {
-              "Accept": "application/json",
-              "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-              client_id: clientId,
-              client_secret: clientSecret,
-              code,
-          }),
+        method: "POST",
+        headers: {
+            "Accept": "application/json",
+            "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+            client_id: clientId,
+            client_secret: clientSecret,
+            code,
+        }),
       });
 
       if (!response.ok) {
@@ -92,13 +93,15 @@ router.get("/login", async (req, res) => {
         return res.redirect("/");
       }
 
-      const user = await userResp.json() as { name: string };
-      console.log(`Found user name: ${user.name}`);
+      const user = await userResp.json() as { login: string, id: number };
+      console.log(`Found user name: ${user.login}`);
+
+      const userId = await setupUser(user.login, result.access_token, user.id);
       
       const secret = process.env.JWT_SECRET!;
       const token = jwt.sign({
-        userId: 1,
-        name: user.name
+        userId: userId,
+        name: user.login
       },
       secret
       );

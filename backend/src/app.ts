@@ -1,10 +1,8 @@
+import "dotenv/config";
 import express from "express";
 import cookieParser from "cookie-parser";
-import dotenv from "dotenv";
 import authRouter from './auth.js';
 import userRouter from './user.js';
-
-dotenv.config();
 
 const app = express();
 const port = 8000;

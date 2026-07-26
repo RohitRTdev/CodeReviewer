@@ -1,8 +1,9 @@
 import jwt from "jsonwebtoken";
 
-export interface UserDetails {
-    isValid: boolean,
-    name?: string
+export type UserDetails = {
+  isValid: boolean,
+  name?: string,
+  id?: number
 };
 
 export function getUserDetails(token: string | undefined) : UserDetails {
@@ -16,10 +17,10 @@ export function getUserDetails(token: string | undefined) : UserDetails {
     }
 
     try {
-      const payload = jwt.verify(token, secret) as {name: string};
+      const payload = jwt.verify(token, secret) as { userId: number, name: string };
       console.log(`Session for ${payload.name} is active!`);
 
-      return { name: payload.name, isValid: true };
+      return { name: payload.name, id: payload.userId, isValid: true };
     }
     catch {
       console.log("Not a valid session");

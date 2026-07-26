@@ -11,6 +11,9 @@ services:
       - "8000:5173"
 
   backend:
+    build:
+      target: dev
+      
     volumes:
       - ./backend:/app
       - /app/node_modules

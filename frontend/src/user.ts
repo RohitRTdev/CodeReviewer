@@ -37,3 +37,20 @@ export async function getUserRepos() : Promise<RepoDetails[]> {
 
     return res.json() as Promise<RepoDetails[]>;
 }
+
+export async function setRepos(repos: RepoDetails[]) : Promise<boolean> {
+    const res = await fetch("/api/setRepos", {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json"
+        },
+        body: JSON.stringify(repos)
+    });
+
+    if (!res.ok) {
+        console.error("Set repo post request failed!");
+        return false;
+    }
+
+    return true;
+}

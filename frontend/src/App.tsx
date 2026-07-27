@@ -1,53 +1,122 @@
 import { useState, useEffect } from 'react';
-import checkSession, { getUser, type RepoDetails, getRepos, getUserRepos } from './user.ts';
+import checkSession, { getUser, type RepoDetails, getRepos, getUserRepos, setRepos } from './user.ts';
 
-function MainContent({ repos } : { repos: RepoDetails[] }) {
+function MainContent() {
   const [showMode, setshowMode] = useState(true);
-  const [userRepos, setuserRepos] = useState<RepoDetails[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [savedRepos, setSavedRepos] = useState<RepoDetails[]>([]);
+  const [userRepos, setUserRepos] = useState<RepoDetails[]>([]);
+  const [selected, setSelected] = useState<number[]>([]);
 
   useEffect(() => {
-    async function fetchUserRepos() {
-      const res = await getUserRepos();
-      setuserRepos(res);
+    async function fetchSavedRepos() {
+      setLoading(true);
+      const res = await getRepos();
+      setSavedRepos(res);
+      if (res.length === 0) {
+        const userRepos = await getUserRepos();
+        setUserRepos(userRepos);
+      }
+      setLoading(false);
     }
+
+    fetchSavedRepos();
+  }, []);
+
+  async function fetchUserRepos() {
+    const res = await getUserRepos();
+    setUserRepos(res);
+  }
+
+  function toggle(id: number) {
+    // Include the id if it is not present
+    // Remove it if it is present
+    setSelected(prev =>
+      prev.includes(id)
+        ? prev.filter(x => x !== id)
+        : [...prev, id]
+    ); 
+  }
+
+  async function toggleShowMode() {
     if (!showMode) {
-      fetchUserRepos();
+      const repos = userRepos.filter(e => selected.includes(e.id));
+      const isSet = await setRepos(repos);
+      if (isSet) {
+        setSavedRepos(repos);
+      }
     }
-  }, [showMode]);
 
+    setshowMode(prev => !prev);
+    setSelected([]);
+  }
 
-  if (repos.length === 0) {
+  if (savedRepos.length === 0 || !showMode) {
     return (
       <div>
       {!showMode && (
         <ul>
           {
             userRepos.map(repo => 
-              <li key={repo.id}>{repo.name}</li>
+              <li key={repo.id}>
+                <label>
+                  <input 
+                    type="checkbox"
+                    checked={selected.includes(repo.id)}
+                    onChange={() => toggle(repo.id)}
+                  />   
+                  {repo.name}
+                </label>  
+              </li>
             )
           }
         </ul>
       )}
-      <button onClick={() => setshowMode(prev => !prev)}>
-        Select repos
+      <button disabled={loading} onClick={async () => {
+        if (loading) {
+          return;
+        }
+
+        setLoading(true);
+        await toggleShowMode();
+        setLoading(false);
+      }}>
+        {loading === true ? "Loading..." : "Select repos"}
       </button>
       </div>
     );
   }
   else {
     return (
-      <ul>
-        {
-          repos.map(repo =>
-            <li key={repo.id}>{repo.name}</li>
-          )
-        }
-      </ul>
+      <div>
+        <ul>
+          {
+            savedRepos.map(repo =>
+              <li key={repo.id}>{repo.name}</li>
+            )
+          }
+        </ul>
+        <button disabled={loading} onClick={ async () => {
+            if (loading) {
+              return;
+            }
+
+            setLoading(true);
+            await fetchUserRepos();
+
+            setLoading(false); 
+            setSelected([]);
+            setshowMode(false); 
+        }}>
+          {loading === true ? "Loading..." : "Select new repos"}
+        </button>
+      </div>
+
     );
   }
 }
 
-function Dashboard({ user, repos } : { user: string, repos: RepoDetails[] }) {  
+function Dashboard({ user } : { user: string }) {  
   return (
     <>
     <div className="navbar">
@@ -59,7 +128,7 @@ function Dashboard({ user, repos } : { user: string, repos: RepoDetails[] }) {
       </div>
     </div>
     <div className="centered-elem">
-      <MainContent repos={repos}></MainContent>
+      <MainContent></MainContent>
     </div>
     </>
   );
@@ -69,8 +138,7 @@ function App() {
   const [loading, setLoading] = useState(true);
   const [button, setButton] = useState(false);
   const [user, setUser] = useState("user");
-  const [repos, setRepos] = useState<RepoDetails[]>([]);
-
+  
   useEffect(() => {
     async function setSessionParams() {
       const isValid = await checkSession();
@@ -79,7 +147,6 @@ function App() {
 
       if (isValid) {
         setUser(await getUser());
-        setRepos(await getRepos());
       }
     }
 
@@ -102,7 +169,7 @@ function App() {
   }
   else {
     return (
-      <Dashboard user={user} repos={repos}></Dashboard>
+      <Dashboard user={user}></Dashboard>
     );
   }
 }

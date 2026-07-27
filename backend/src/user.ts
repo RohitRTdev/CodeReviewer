@@ -1,11 +1,6 @@
 import { Router } from "express";
-import { getUserDetails } from './utils.js';
-import { getRepoDetails, getAccessToken } from './db.js';
-
-type RepoDetails = {
-    id: number,
-    name: string
-};
+import { getUserDetails, type RepoDetails } from './utils.js';
+import { getRepoDetails, getAccessToken, registerAllRepos } from './db.js';
 
 const router = Router();
 
@@ -27,7 +22,7 @@ router.get("/savedRepos", async (req, res) => {
 
     try {
         const result = await getRepoDetails(token);
-        return res.json(result);
+        return res.status(200).json(result);
     }
     catch (err) {
         return res.sendStatus(401);
@@ -65,5 +60,26 @@ router.get("/getRepos", async (req, res) => {
         return res.sendStatus(401);
     }
 });
+
+router.post("/setRepos", async (req, res) => {
+    const token = req.cookies?.jwt;
+    const user = getUserDetails(token);
+    if (!user.isValid) {
+        return res.sendStatus(401);
+    }
+
+    try {
+        const access_token = await getAccessToken(token);
+        const repos = req.body as RepoDetails[];
+        await registerAllRepos(user.id!, user.name!, access_token, repos);
+
+        res.sendStatus(200);
+    }
+    catch (err) {
+        console.log(err);
+        res.sendStatus(500);
+    }
+});
+
 
 export default router;

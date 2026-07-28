@@ -61,17 +61,11 @@ export async function getRepoDetails(token?: string) : Promise<RepoDetails[]> {
     return resDb.rows.map(row => ({ id: row.github_repo_id, name: row.name }));
 }
 
-export async function getAccessToken(token?: string) : Promise<string> {
-    const result = getUserDetails(token);
-    if (!result.isValid) {
-        console.log("getAccessToken authentication failed!");
-        throw new Error("Auth failed!");
-    }
-
+async function getAccessTokenFromUserId(userId: number) : Promise<string> {
     const resDb = await pool.query<{token: string}>(
         `SELECT token FROM users
         where id = $1`,
-        [result.id!]
+        [userId]
     );
 
     const access_token = resDb.rows[0]?.token;
@@ -80,6 +74,16 @@ export async function getAccessToken(token?: string) : Promise<string> {
     }
 
     return access_token;
+}
+
+export async function getAccessToken(token?: string) : Promise<string> {
+    const result = getUserDetails(token);
+    if (!result.isValid) {
+        console.log("getAccessToken authentication failed!");
+        throw new Error("Auth failed!");
+    }
+
+    return getAccessTokenFromUserId(result.id!);
 }
 
 export async function registerAllRepos(userId: number, userName: string, access_token: string, repos: RepoDetails[]) {
@@ -157,4 +161,36 @@ export async function registerAllRepos(userId: number, userName: string, access_
     finally {
         client.release();
     }
+}
+
+export async function getRepoSecret(hookId: number) : Promise<string> {
+    const response = await pool.query<{ secret: string }>(
+        `SELECT secret FROM repo
+       WHERE webhook_id=$1`,
+       [hookId]
+    );
+
+    const secret = response.rows[0]?.secret;
+
+    if (!secret) {
+        throw new Error(`No db entry found for hook_id=${hookId}`);
+    }
+
+    return secret;
+}
+
+export async function getAccessTokenFromRepoId(repoId: number) : Promise<string> {
+    const response = await pool.query<{ user_id: number }>(
+        `SELECT user_id FROM repo
+        WHERE github_repo_id=$1`,
+        [repoId]
+    );
+
+    const userId = response.rows[0]?.user_id;
+
+    if (!userId) {
+        throw new Error("No valid user id found for this repository");
+    }
+
+    return getAccessTokenFromUserId(userId);
 }

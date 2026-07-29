@@ -18,7 +18,7 @@ const pool = new Pool({
     database: dbName 
 });
 
-export async function setupUser(name: string, access_token: string, github_id: number) : Promise<number> {
+export async function setupUser(name: string, access_token: string, github_id: number) : Promise<string> {
     const res = await pool.query(
         `INSERT INTO users (name, token, github_id)
         VALUES ($1, $2, $3)
@@ -33,7 +33,7 @@ export async function setupUser(name: string, access_token: string, github_id: n
         throw new Error("SQL insert failed!");
     } 
     
-    const user = res.rows[0] as { id: number };
+    const user = res.rows[0] as { id: string };
     console.log(`User: ${name} with id: ${user.id} registered`);
 
     return user.id;
@@ -46,7 +46,7 @@ export async function getRepoDetails(token?: string) : Promise<RepoDetails[]> {
         throw new Error("Auth failed!");
     }
 
-    const resDb = await pool.query<{github_repo_id: number, name: string}>(
+    const resDb = await pool.query<{github_repo_id: string, name: string}>(
         `SELECT github_repo_id, name FROM repo
         where user_id = $1`,
         [result.id!]
@@ -61,7 +61,7 @@ export async function getRepoDetails(token?: string) : Promise<RepoDetails[]> {
     return resDb.rows.map(row => ({ id: row.github_repo_id, name: row.name }));
 }
 
-async function getAccessTokenFromUserId(userId: number) : Promise<string> {
+async function getAccessTokenFromUserId(userId: string) : Promise<string> {
     const resDb = await pool.query<{token: string}>(
         `SELECT token FROM users
         where id = $1`,
@@ -86,9 +86,9 @@ export async function getAccessToken(token?: string) : Promise<string> {
     return getAccessTokenFromUserId(result.id!);
 }
 
-export async function registerAllRepos(userId: number, userName: string, access_token: string, repos: RepoDetails[]) {
+export async function registerAllRepos(userId: string, userName: string, access_token: string, repos: RepoDetails[]) {
     const client = await pool.connect();
-    const createdHooks: { name: string; hookId: number }[] = [];
+    const createdHooks: { name: string; hookId: string }[] = [];
     try {
         await client.query("BEGIN");
         await client.query(
@@ -97,24 +97,24 @@ export async function registerAllRepos(userId: number, userName: string, access_
         ); 
 
         // First, get all the repos associated with this user
-        const userDbRepos = await client.query<{github_repo_id: number, webhook_id: number, name: string, secret: string}>(
+        const userDbRepos = await client.query<{github_repo_id: string, webhook_id: string, name: string, secret: string}>(
             `SELECT github_repo_id, name, webhook_id, secret FROM repo
             WHERE user_id=$1`,
             [userId]
         );
 
-        const userInfo = new Map<number, {name: string, hookId: number}>();
+        const userInfo = new Map<string, {name: string, hookId: string}>();
         for (const row of userDbRepos.rows) {
             userInfo.set(row.github_repo_id, {name: row.name, hookId: row.webhook_id});
         }
 
-        const callerRepoInfo = new Map<number, string>();
+        const callerRepoInfo = new Map<string, string>();
         for (const row of repos) {
             callerRepoInfo.set(row.id, row.name);
         }
 
         // Find which repos need to be registered and which needs to be unregistered
-        const userRepos = new Set<number>(userDbRepos.rows.map(row => row.github_repo_id));
+        const userRepos = new Set(userDbRepos.rows.map(row => row.github_repo_id));
         const newRepos = new Set(repos.map(row => row.id));
 
         const toAdd = newRepos.difference(userRepos);
@@ -180,7 +180,7 @@ export async function getRepoSecret(hookId: number) : Promise<string> {
 }
 
 export async function getAccessTokenFromRepoId(repoId: number) : Promise<string> {
-    const response = await pool.query<{ user_id: number }>(
+    const response = await pool.query<{ user_id: string }>(
         `SELECT user_id FROM repo
         WHERE github_repo_id=$1`,
         [repoId]

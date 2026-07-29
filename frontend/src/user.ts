@@ -1,5 +1,5 @@
 export type RepoDetails = {
-  id: number,
+  id: string,
   name: string
 };
 

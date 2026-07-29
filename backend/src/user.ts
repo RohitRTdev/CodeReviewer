@@ -47,7 +47,7 @@ router.get("/getRepos", async (req, res) => {
         }
 
         const repos = (await response.json()).map((repo: any) => ({
-            id: repo.id,
+            id: repo.id.toString(),
             name: repo.name
         })) as RepoDetails[];
 

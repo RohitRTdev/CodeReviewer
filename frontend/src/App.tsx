@@ -6,7 +6,7 @@ function MainContent() {
   const [loading, setLoading] = useState(false);
   const [savedRepos, setSavedRepos] = useState<RepoDetails[]>([]);
   const [userRepos, setUserRepos] = useState<RepoDetails[]>([]);
-  const [selected, setSelected] = useState<number[]>([]);
+  const [selected, setSelected] = useState<string[]>([]);
 
   useEffect(() => {
     async function fetchSavedRepos() {
@@ -28,7 +28,7 @@ function MainContent() {
     setUserRepos(res);
   }
 
-  function toggle(id: number) {
+  function toggle(id: string) {
     // Include the id if it is not present
     // Remove it if it is present
     setSelected(prev =>

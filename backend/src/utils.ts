@@ -1,13 +1,18 @@
 import jwt from "jsonwebtoken";
 
+const host = process.env.DOMAIN;
+if (!host) {
+  throw new Error("DOMAIN is not set!");
+}
+
 export type UserDetails = {
   isValid: boolean,
   name?: string,
-  id?: number
+  id?: string
 };
 
 export type RepoDetails = {
-    id: number,
+    id: string,
     name: string
 };
 
@@ -22,7 +27,7 @@ export function getUserDetails(token: string | undefined) : UserDetails {
   }
 
   try {
-    const payload = jwt.verify(token, secret) as { userId: number, name: string };
+    const payload = jwt.verify(token, secret) as { userId: string, name: string };
     console.log(`Session for ${payload.name} is active!`);
 
     return { name: payload.name, id: payload.userId, isValid: true };
@@ -33,7 +38,7 @@ export function getUserDetails(token: string | undefined) : UserDetails {
   }
 }
 
-export async function removeWebhook(access_token: string, owner: string, repoName: string, hookId: number) {
+export async function removeWebhook(access_token: string, owner: string, repoName: string, hookId: string) {
   const res = await fetch(
     `https://api.github.com/repos/${owner}/${repoName}/hooks/${hookId}`,
     {
@@ -51,7 +56,7 @@ export async function removeWebhook(access_token: string, owner: string, repoNam
   }
 }
 
-export async function registerWebhook(access_token: string, owner: string, repoName: string, secret: string) : Promise<number> {
+export async function registerWebhook(access_token: string, owner: string, repoName: string, secret: string) : Promise<string> {
   const res = await fetch(`https://api.github.com/repos/${owner}/${repoName}/hooks`, {
     method: "POST",
     headers: {
@@ -67,7 +72,7 @@ export async function registerWebhook(access_token: string, owner: string, repoN
         "pull_request"
       ],
       config: {
-        url: "https://codereview.dummy.com/hook",
+        url: `${host}/api/webhook`,
         content_type: "json",
         secret: `${secret}`,
         insecure_ssl: "0"
@@ -81,6 +86,6 @@ export async function registerWebhook(access_token: string, owner: string, repoN
     throw new Error("Webhook registration failed!");
   }
 
-  const webhook = await res.json();
-  return webhook.id;
+  const webhook = await res.json() as { id: number };
+  return webhook.id.toString();
 }

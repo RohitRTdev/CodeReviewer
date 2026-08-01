@@ -8,6 +8,8 @@ RUN_MIGRATIONS=0
 COPY_ENV=0
 BUILD_OPT=""
 RUN=0
+STOP=0
+RESET=""
 
 for arg in "$@"
 do
@@ -21,6 +23,13 @@ do
     elif [ "$arg" = "run" ]
     then
         RUN=1
+    elif [ "$arg" = "stop" ]
+    then
+        STOP=1
+    elif [ "$arg" = "reset" ]
+    then
+        STOP=1
+        RESET="-v"
     fi
 done
 
@@ -29,6 +38,8 @@ then
     echo "Installing dependencies (Primarily to stop intellisense from complaining)"
     npm -C backend install
     npm -C frontend install
+    echo "Removing existing database and stopping services"
+    docker compose down -v
     echo "Starting postgres service"
     docker compose up -d postgres
     echo "Waiting for postgres service to accept connections"
@@ -57,8 +68,12 @@ then
     echo ".env is setup. Please fill in the remaining blank keys in ./backend/.env"
 fi
 
-if [ "$RUN" = "1" ]
+if [ "$STOP" = "1" ]
+then
+    echo "Stopping all services"
+    docker compose down $RESET
+elif [ "$RUN" = "1" ]
 then 
     echo "Starting containers"
-    docker compose -f compose.yaml -f compose.dev.yaml up $BUILD_OPT
+    docker compose -f compose.yaml -f compose.dev.yaml up $BUILD_OPT -d
 fi

@@ -163,7 +163,7 @@ export async function registerAllRepos(userId: string, userName: string, access_
     }
 }
 
-export async function getRepoSecret(hookId: number) : Promise<string> {
+export async function getRepoSecret(hookId: string) : Promise<string> {
     const response = await pool.query<{ secret: string }>(
         `SELECT secret FROM repo
        WHERE webhook_id=$1`,
@@ -179,7 +179,7 @@ export async function getRepoSecret(hookId: number) : Promise<string> {
     return secret;
 }
 
-export async function getAccessTokenFromRepoId(repoId: number) : Promise<string> {
+export async function getAccessTokenFromRepoId(repoId: string) : Promise<string> {
     const response = await pool.query<{ user_id: string }>(
         `SELECT user_id FROM repo
         WHERE github_repo_id=$1`,

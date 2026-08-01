@@ -12,7 +12,7 @@ const AI = new GoogleGenAI({
 });
 
 type Job = {
-    repoId: number,
+    repoId: string,
     pullNum: number,
     owner: string,
     repoName: string,
@@ -71,7 +71,7 @@ export type WebHook = {
 
 const jobQueue = new JobQueue();
 
-async function executeWorker(repoId: number, owner: string, repo: string, pull: number, headCommitSha: string, retries: number) {
+async function executeWorker(repoId: string, owner: string, repo: string, pull: number, headCommitSha: string, retries: number) {
     try {
         const accessToken = await getAccessTokenFromRepoId(repoId);
         const res = await fetch(
@@ -204,6 +204,7 @@ async function executeWorker(repoId: number, owner: string, repo: string, pull: 
                     const error = await reviewResponse.text();
                     throw new Error(`Failed to post review comments for PR: ${error}`);
                 }
+                console.log("Completed job");
             }
             catch (err) {
                 if (err instanceof SyntaxError) {
@@ -236,10 +237,10 @@ async function executeWorker(repoId: number, owner: string, repo: string, pull: 
 async function workerLoop() {
     console.log("Started worker thread");
     while(true) {
+        console.log("Waiting for new jobs");
         const job = await jobQueue.pop();
         console.log(`Executing job with owner: ${job.owner}, repo: ${job.repoName} and pull: ${job.pullNum}`);
-        await executeWorker(job.repoId, job.owner, job.repoName, job.pullNum, job.headCommitSha, job.retries);
-        console.log("Completed job");   
+        executeWorker(job.repoId, job.owner, job.repoName, job.pullNum, job.headCommitSha, job.retries);
     }
 }
 
@@ -254,7 +255,7 @@ export function submitWebhook(reqObj: WebHook) {
                 owner: reqObj.repository.owner.login,
                 pullNum: reqObj.number,
                 repoName: reqObj.repository.name,
-                repoId: reqObj.repository.id,
+                repoId: reqObj.repository.id.toString(),
                 headCommitSha: reqObj.pull_request.head.sha,
                 retries: 0
             });    

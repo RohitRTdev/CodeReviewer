@@ -11,15 +11,10 @@ const app = express();
 const port = 8000;
 
 app.post("/api/webhook", express.raw({ type: "application/json" }), async (req, res) => {
-  const hookIdStr = req.header("X-Github-Hook-ID");
+  const hookId = req.header("X-Github-Hook-ID");
   const actual = req.header("X-Hub-Signature-256");
   const eventType = req.header("X-Github-Event");
-  if (!hookIdStr || !actual || !eventType) {
-    return res.sendStatus(400);
-  }
-
-  const hookId = Number(hookIdStr);
-  if (Number.isNaN(hookId)) {
+  if (!hookId || !actual || !eventType) {
     return res.sendStatus(400);
   }
 
